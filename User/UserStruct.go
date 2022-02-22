@@ -1,17 +1,13 @@
 package User
 
-import "github.com/gin-gonic/gin"
-
-var r *gin.Engine
-
 type User struct {
 	ID       uint   `gorm:"primarykey" json:"id"`
 	Name     string `gorm:"notNull" json:"name"`
 	Email    string `gorm:"uniqueIndex;notNull" json:"email"`
 	Password string `gorm:"notNull" json:"password"`
 	Username string `gorm:"uniqueIndex;notNull" json:"username"`
-	NIK      string `gorm:"uniqueIndex;notNull"`
-	NIM      string `gorm:"uniqueIndex;notNull"`
+	NIK      string `gorm:"uniqueIndex;notNull" json:"nik"`
+	NIM      string `gorm:"uniqueIndex;notNull" json:"nim"`
 }
 
 type UserRegister struct {
@@ -19,8 +15,8 @@ type UserRegister struct {
 	Email    string `gorm:"uniqueIndex;notNull" json:"email"`
 	Password string `gorm:"notNull" json:"password"`
 	Username string `gorm:"uniqueIndex;notNull" json:"username"`
-	NIK      string `gorm:"uniqueIndex;notNull"`
-	NIM      string `gorm:"uniqueIndex;notNull"`
+	NIK      string `gorm:"uniqueIndex;notNull" json:"nik"`
+	NIM      string `gorm:"uniqueIndex;notNull" json:"nim"`
 }
 
 type UserLogin struct {
