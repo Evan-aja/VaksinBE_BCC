@@ -34,32 +34,4 @@ func main() {
 		return
 	}
 	fmt.Println("Database terinisialisasi")
-	// user := User.User{
-	// 	Name:     "Hi",
-	// 	Email:    "there",
-	// 	Password: "youtoo",
-	// 	Username: "asd",
-	// 	NIK:      "72184",
-	// 	NIM:      "1234123",
-	// }
-	// fmt.Println(user)
-	// _db, err := gorm.Open(mysql.Open("root:123@tcp(127.0.0.1:41063)/pemweb?parseTime=true"), &gorm.Config{})
-	// if err != nil {
-	// 	fmt.Println(err.Error())
-	// } else {
-	// 	_db.AutoMigrate(&User{})
-	// 	user := User{
-	// 		Name:     "Gabriel",
-	// 		Password: "123",
-	// 		Username: "evan",
-	// 	}
-	// 	_db.Create(&user)
-	// 	fmt.Println(_db)
-	// 	noc := User{}
-	// 	if result := _db.Where("id=?", 1).Take(&noc); result.Error != nil {
-	// 		fmt.Println(result.Error.Error())
-	// 		return
-	// 	}
-	// 	fmt.Println(noc)
-	// }
 }
