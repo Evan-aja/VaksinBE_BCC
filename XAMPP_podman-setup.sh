@@ -1,5 +1,5 @@
 sec=5
-name=xamppBCC2
+name=xamppBCC
 mysqlpassword=123
 
 echo "Creating container with the name $name"; podman run --name $name -p 41061:22 -p 41062:80 -p 41063:3306 -p 41064:5900 -d -v /www:/www tomsik68/xampp
