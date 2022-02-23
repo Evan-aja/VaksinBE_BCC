@@ -16,7 +16,7 @@ func Open() *gorm.DB {
 	if err != nil {
 		println(err.Error())
 	}
-	if err = db.AutoMigrate(&User.User{}, &User.UserPublic{}); err != nil {
+	if err = db.AutoMigrate(&User.User{}, &User.UserPublic{}, &User.UserVacc{}); err != nil {
 		fmt.Println(err.Error())
 	}
 	return db

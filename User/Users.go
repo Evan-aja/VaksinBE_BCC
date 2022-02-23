@@ -17,22 +17,66 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 	r.GET("/", auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
-		if result := db.Where("id=?", id).Take(&user); result.Error != nil {
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"succ":    false,
-				"message": result.Error.Error(),
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
 			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"succ":    true,
+			"success": true,
 			"message": "success",
 			"data": gin.H{
+				"id":       user.ID,
 				"name":     user.Name,
 				"email":    user.Email,
 				"username": user.Username,
 				"nik":      user.NIK,
 				"nim":      user.NIM,
+			},
+		})
+	})
+	r.GET("/search", func(c *gin.Context) {
+		name, nameExists := c.GetQuery("name")
+		email, emailExists := c.GetQuery("email")
+		username, usernameExists := c.GetQuery("username")
+		if !nameExists && !usernameExists && !emailExists {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+			})
+			return
+		}
+		var query []UserPublic
+		dbtmp := db
+		if nameExists {
+			dbtmp = dbtmp.Where("name LIKE ?", "%"+name+"%")
+		}
+		if emailExists {
+			dbtmp = dbtmp.Where("email LIKE ?", "%"+email+"%")
+		}
+		if usernameExists {
+			dbtmp = dbtmp.Where("username LIKE ?", "%"+username+"%")
+		}
+		if err := dbtmp.Find(&query); err.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data": gin.H{
+				"query": gin.H{
+					"name":     name,
+					"email":    email,
+					"username": username,
+				},
+				"result": query,
 			},
 		})
 	})
@@ -46,13 +90,10 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		hash := sha512.New()
-		hash.Write([]byte(input.Password))
-		pass := hex.EncodeToString(hash.Sum(nil))
 		regist := User{
 			Name:     input.Name,
 			Email:    input.Email,
-			Password: pass,
+			Password: hash(input.Password),
 			Username: input.Username,
 			NIK:      input.NIK,
 			NIM:      input.NIM,
@@ -64,6 +105,11 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			NIK:      input.NIK,
 			NIM:      input.NIM,
 		}
+		registVacc := UserVacc{
+			Dosis1:  false,
+			Dosis2:  false,
+			Booster: false,
+		}
 		if err := db.Create(&regist); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -73,6 +119,14 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		if err := db.Create(&registPublic); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err := db.Create(&registVacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -102,17 +156,16 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		}
 		login := User{}
 		if err := db.Where("email=?", input.Email).Take(&login); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "email does not exist",
-				"error":   err.Error.Error(),
-			})
-			return
+			if err = db.Where("username=?", input.Username).Take(&login); err.Error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "Email does not exist",
+					"error":   err.Error.Error(),
+				})
+				return
+			}
 		}
-		hash := sha512.New()
-		hash.Write([]byte(input.Password))
-		pass := hex.EncodeToString(hash.Sum(nil))
-		if login.Password == pass {
+		if login.Password == hash(input.Password) {
 			token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
 				"id":  login.ID,
 				"exp": time.Now().Add(time.Hour * 7 * 24).Unix(),
@@ -127,7 +180,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 				return
 			}
 			c.JSON(http.StatusOK, gin.H{
-				"succ":    true,
+				"success": true,
 				"message": "Welcome, here's your token. don't lose it ;)",
 				"data": gin.H{
 					"email":    login.Email,
@@ -138,90 +191,221 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		} else {
 			c.JSON(http.StatusForbidden, gin.H{
-				"succ":    false,
+				"success": false,
 				"message": "Did you forget your own password?",
 			})
 			return
 		}
 	})
-	r.GET("/search", func(c *gin.Context) {
-		name, nameExists := c.GetQuery("name")
-		email, emailExists := c.GetQuery("email")
-		username, usernameExists := c.GetQuery("username")
-		if !nameExists && !usernameExists && !emailExists {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Data incorrect.",
-			})
-			return
-		}
-		var query []UserPublic
-		dbtmp := db
-		if nameExists {
-			dbtmp = dbtmp.Where("name LIKE ?", "%"+name+"%")
-		}
-		if emailExists {
-			dbtmp = dbtmp.Where("email LIKE ?", "%"+email+"%")
-		}
-		if usernameExists {
-			dbtmp = dbtmp.Where("username LIKE ?", "%"+username+"%")
-		}
-		if result := dbtmp.Find(&query); result.Error != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Something wrong happened",
-				"error":   result.Error.Error(),
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"succ": true,
-			"data": gin.H{
-				"query": gin.H{
-					"name":     name,
-					"email":    email,
-					"username": username,
-				},
-				"result": query,
-			},
-		})
-	})
 	r.DELETE("/", auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
 		userpub := UserPublic{}
-		if result := db.Where("id=?", id).Take(&user); result.Error != nil {
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"succ":    false,
-				"message": result.Error.Error(),
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
 			})
 			return
 		}
-		if result := db.Where("id=?", id).Take(&userpub); result.Error != nil {
+		if err := db.Where("id=?", id).Take(&userpub); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"succ":    false,
-				"message": result.Error.Error(),
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
 			})
 			return
 		}
-		if result := db.Delete(&user); result.Error != nil {
+		if err := db.Delete(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"succ":    false,
-				"message": result.Error.Error(),
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
 			})
 			return
 		}
-		if result := db.Delete(&userpub); result.Error != nil {
+		if err := db.Delete(&userpub); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"succ":    false,
-				"message": result.Error.Error(),
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
 			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"succ":    true,
+			"success": true,
 			"deleted": userpub,
 		})
 	})
+	r.PATCH("/", auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		var input User
+		if err := c.BindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Body is invalid.",
+				"error":   err.Error(),
+			})
+			return
+		}
+		user := User{}
+		userpub := UserPublic{}
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err := db.Where("id=?", id).Take(&userpub); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		user = User{
+			ID:       user.ID,
+			Name:     input.Name,
+			Email:    input.Email,
+			Password: hash(input.Password),
+			Username: input.Username,
+			NIK:      input.NIK,
+			NIM:      input.NIM,
+		}
+		userpub = UserPublic{
+			ID:       userpub.ID,
+			Name:     input.Name,
+			Email:    input.Email,
+			Username: input.Username,
+			NIK:      input.NIK,
+			NIM:      input.NIM,
+		}
+		err := db.Model(&user).Updates(user)
+		if err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when updating the database.",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		ers := db.Model(&userpub).Updates(userpub)
+		if ers.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when updating the database.",
+				"error":   ers.Error.Error(),
+			})
+			return
+		}
+		if err := db.Where("id = ?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when querying the database.",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if ers := db.Where("id = ?", id).Take(&userpub); ers.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when querying the database.",
+				"error":   ers.Error.Error(),
+			})
+			return
+		}
+		if err.RowsAffected < 1 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "User not found.",
+			})
+			return
+		}
+		if ers.RowsAffected < 1 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "User not found.",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Update successful.",
+			"data":    userpub,
+			"input":   input,
+		})
+	})
+	r.PATCH("/vaccine", auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		var input UserVacc
+		if err := c.BindJSON(&input); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Body is invalid.",
+				"error":   err.Error(),
+			})
+			return
+		}
+		vaksin := UserVacc{}
+		if err := db.Where("id=?", id).Take(&vaksin); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if input.Dosis1 && !input.Dosis2 && !input.Booster {
+			input.Dosis2 = false
+			input.Booster = false
+		}
+		if input.Dosis2 && !input.Booster {
+			input.Dosis1 = true
+			input.Booster = false
+		}
+		if input.Booster {
+			input.Dosis1 = true
+			input.Dosis2 = true
+		}
+		vaksin = UserVacc{
+			ID:      vaksin.ID,
+			Dosis1:  input.Dosis1,
+			Dosis2:  input.Dosis2,
+			Booster: input.Booster,
+		}
+		// err := db.Model(&vaksin).Updates(vaksin)
+		err := db.Model(&vaksin).Updates(map[string]interface{}{"id": vaksin.ID, "dosis1": vaksin.Dosis1, "dosis2": vaksin.Dosis2, "booster": vaksin.Booster})
+		if err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when updating the database.",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err.RowsAffected < 1 {
+			c.JSON(http.StatusNotFound, gin.H{
+				"success": false,
+				"message": "User not found.",
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Update successful.",
+			"data":    vaksin,
+			"input":   input,
+		})
+	})
+}
 
+func hash(input string) string {
+	hash := sha512.New()
+	hash.Write([]byte(input))
+	pass := hex.EncodeToString(hash.Sum(nil))
+	return pass
 }
