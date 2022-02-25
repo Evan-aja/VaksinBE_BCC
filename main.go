@@ -3,6 +3,7 @@ package main
 import (
 	"VaksinBE_BCC/Database"
 	"VaksinBE_BCC/User"
+	"VaksinBE_BCC/Vaccine"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -18,6 +19,7 @@ func main() {
 	r = gin.Default()
 
 	User.Routes(db, r)
+	Vaccine.Routes(db, r)
 
 	fmt.Println("Router siap")
 	fmt.Println("Server berjalan")

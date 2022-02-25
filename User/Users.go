@@ -1,7 +1,8 @@
 package User
 
 import (
-	auth "VaksinBE_BCC/Auth"
+	"VaksinBE_BCC/Auth"
+	"VaksinBE_BCC/Vaccine"
 	"crypto/sha512"
 	"encoding/hex"
 	"net/http"
@@ -14,10 +15,19 @@ import (
 
 func Routes(db *gorm.DB, q *gin.Engine) {
 	r := q.Group("/user")
-	r.GET("/", auth.Authorization(), func(c *gin.Context) {
+	r.GET("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
+		vacc := Vaccine.Vaccine{}
 		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err := db.Where("id=?", id).Take(&vacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -29,20 +39,21 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "success",
 			"data": gin.H{
-				"id":       user.ID,
-				"name":     user.Name,
-				"email":    user.Email,
-				"username": user.Username,
-				"nik":      user.NIK,
-				"nim":      user.NIM,
+				"id":        user.ID,
+				"name":      user.Name,
+				"email":     user.Email,
+				"handphone": user.Handphone,
+				"dosis 1":   vacc.Dosis1,
+				"dosis 2":   vacc.Dosis2,
+				"booster":   vacc.Booster,
 			},
 		})
 	})
 	r.GET("/search", func(c *gin.Context) {
 		name, nameExists := c.GetQuery("name")
 		email, emailExists := c.GetQuery("email")
-		username, usernameExists := c.GetQuery("username")
-		if !nameExists && !usernameExists && !emailExists {
+		handphone, handphoneExists := c.GetQuery("handphone")
+		if !nameExists && !handphoneExists && !emailExists {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -57,8 +68,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		if emailExists {
 			dbtmp = dbtmp.Where("email LIKE ?", "%"+email+"%")
 		}
-		if usernameExists {
-			dbtmp = dbtmp.Where("username LIKE ?", "%"+username+"%")
+		if handphoneExists {
+			dbtmp = dbtmp.Where("handphone LIKE ?", "%"+handphone+"%")
 		}
 		if err := dbtmp.Find(&query); err.Error != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -72,9 +83,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"data": gin.H{
 				"query": gin.H{
-					"name":     name,
-					"email":    email,
-					"username": username,
+					"name":      name,
+					"email":     email,
+					"handphone": handphone,
 				},
 				"result": query,
 			},
@@ -91,21 +102,17 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		regist := User{
-			Name:     input.Name,
-			Email:    input.Email,
-			Password: hash(input.Password),
-			Username: input.Username,
-			NIK:      input.NIK,
-			NIM:      input.NIM,
+			Name:      input.Name,
+			Email:     input.Email,
+			Password:  hash(input.Password),
+			Handphone: input.Handphone,
 		}
 		registPublic := UserPublic{
-			Name:     input.Name,
-			Email:    input.Email,
-			Username: input.Username,
-			NIK:      input.NIK,
-			NIM:      input.NIM,
+			Name:      input.Name,
+			Email:     input.Email,
+			Handphone: input.Handphone,
 		}
-		registVacc := UserVacc{
+		registVacc := Vaccine.Vaccine{
 			Dosis1:  false,
 			Dosis2:  false,
 			Booster: false,
@@ -139,8 +146,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"message": "Account created successfully",
 			"error":   nil,
 			"data": gin.H{
-				"username": regist.Username,
-				"email":    regist.Email,
+				"handphone": regist.Handphone,
+				"email":     regist.Email,
 			},
 		})
 	})
@@ -156,7 +163,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		}
 		login := User{}
 		if err := db.Where("email=?", input.Email).Take(&login); err.Error != nil {
-			if err = db.Where("username=?", input.Username).Take(&login); err.Error != nil {
+			if err = db.Where("handphone=?", input.Handphone).Take(&login); err.Error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"success": false,
 					"message": "Email does not exist",
@@ -183,9 +190,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 				"success": true,
 				"message": "Welcome, here's your token. don't lose it ;)",
 				"data": gin.H{
-					"email":    login.Email,
-					"username": login.Username,
-					"token":    strToken,
+					"email":     login.Email,
+					"handphone": login.Handphone,
+					"token":     strToken,
 				},
 			})
 			return
@@ -197,7 +204,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 	})
-	r.DELETE("/", auth.Authorization(), func(c *gin.Context) {
+	r.DELETE("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
 		userpub := UserPublic{}
@@ -238,7 +245,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"deleted": userpub,
 		})
 	})
-	r.PATCH("/", auth.Authorization(), func(c *gin.Context) {
+	r.PATCH("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		var input User
 		if err := c.BindJSON(&input); err != nil {
@@ -268,21 +275,17 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		user = User{
-			ID:       user.ID,
-			Name:     input.Name,
-			Email:    input.Email,
-			Password: hash(input.Password),
-			Username: input.Username,
-			NIK:      input.NIK,
-			NIM:      input.NIM,
+			ID:        user.ID,
+			Name:      input.Name,
+			Email:     input.Email,
+			Password:  hash(input.Password),
+			Handphone: input.Handphone,
 		}
 		userpub = UserPublic{
-			ID:       userpub.ID,
-			Name:     input.Name,
-			Email:    input.Email,
-			Username: input.Username,
-			NIK:      input.NIK,
-			NIM:      input.NIM,
+			ID:        userpub.ID,
+			Name:      input.Name,
+			Email:     input.Email,
+			Handphone: input.Handphone,
 		}
 		err := db.Model(&user).Updates(user)
 		if err.Error != nil {
@@ -336,68 +339,6 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "Update successful.",
 			"data":    userpub,
-			"input":   input,
-		})
-	})
-	r.PATCH("/vaccine", auth.Authorization(), func(c *gin.Context) {
-		id, _ := c.Get("id")
-		var input UserVacc
-		if err := c.BindJSON(&input); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"success": false,
-				"message": "Body is invalid.",
-				"error":   err.Error(),
-			})
-			return
-		}
-		vaksin := UserVacc{}
-		if err := db.Where("id=?", id).Take(&vaksin); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
-		if input.Dosis1 && !input.Dosis2 && !input.Booster {
-			input.Dosis2 = false
-			input.Booster = false
-		}
-		if input.Dosis2 && !input.Booster {
-			input.Dosis1 = true
-			input.Booster = false
-		}
-		if input.Booster {
-			input.Dosis1 = true
-			input.Dosis2 = true
-		}
-		vaksin = UserVacc{
-			ID:      vaksin.ID,
-			Dosis1:  input.Dosis1,
-			Dosis2:  input.Dosis2,
-			Booster: input.Booster,
-		}
-		// err := db.Model(&vaksin).Updates(vaksin)
-		err := db.Model(&vaksin).Updates(map[string]interface{}{"id": vaksin.ID, "dosis1": vaksin.Dosis1, "dosis2": vaksin.Dosis2, "booster": vaksin.Booster})
-		if err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Error when updating the database.",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
-		if err.RowsAffected < 1 {
-			c.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"message": "User not found.",
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"message": "Update successful.",
-			"data":    vaksin,
 			"input":   input,
 		})
 	})
