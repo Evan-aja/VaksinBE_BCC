@@ -1,18 +1,22 @@
 package Auth
 
 import (
+	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	"github.com/joho/godotenv"
 )
 
 func Authorization() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Authorization")
 		header = header[len("Bearer "):]
+		godotenv.Load(".env")
 		token, err := jwt.Parse(header, func(t *jwt.Token) (interface{}, error) {
-			return []byte("GeneratorTokenSuperKompleks"), nil
+			return []byte(fmt.Sprintf("%s", os.Getenv("TOKEN_G"))), nil
 		})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{

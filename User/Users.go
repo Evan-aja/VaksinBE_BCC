@@ -5,11 +5,14 @@ import (
 	"VaksinBE_BCC/Vaccine"
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
+	"github.com/joho/godotenv"
 	"gorm.io/gorm"
 )
 
@@ -19,6 +22,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		id, _ := c.Get("id")
 		user := User{}
 		vacc := Vaccine.Vaccine{}
+		proof := Vaccine.VaccProof{}
 		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -35,17 +39,28 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		if err := db.Where("id_vaccine=?", id).Take(&proof); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "success",
 			"data": gin.H{
-				"id":        user.ID,
-				"name":      user.Name,
-				"email":     user.Email,
-				"handphone": user.Handphone,
-				"dosis 1":   vacc.Dosis1,
-				"dosis 2":   vacc.Dosis2,
-				"booster":   vacc.Booster,
+				"id":                  user.ID,
+				"name":                user.Name,
+				"email":               user.Email,
+				"handphone":           user.Handphone,
+				"dosis 1":             vacc.Dosis1,
+				"dosis 2":             vacc.Dosis2,
+				"booster":             vacc.Booster,
+				"bukti dosis 1":       proof.Dosis1,
+				"bukti dosis 2":       proof.Dosis2,
+				"bukti dosis booster": proof.Booster,
 			},
 		})
 	})
@@ -141,6 +156,17 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		ProofVacc := Vaccine.VaccProof{
+			IDVaccine: registVacc.ID,
+		}
+		if err := db.Create(&ProofVacc); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Account created successfully",
@@ -177,7 +203,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 				"id":  login.ID,
 				"exp": time.Now().Add(time.Hour * 7 * 24).Unix(),
 			})
-			strToken, err := token.SignedString([]byte("GeneratorTokenSuperKompleks"))
+			godotenv.Load(".env")
+			strToken, err := token.SignedString([]byte(fmt.Sprintf("%s", os.Getenv("TOKEN_G"))))
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"success": false,
