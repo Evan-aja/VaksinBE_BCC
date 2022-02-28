@@ -8,8 +8,8 @@ type Vaccine struct {
 }
 
 type VaccProof struct {
-	IDVaccine uint
-	Vaccine   Vaccine `gorm:"ForeignKey:IDVaccine;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"idbukti"`
+	IDVaccine uint    `json:"idbukti"`
+	Vaccine   Vaccine `gorm:"ForeignKey:IDVaccine;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Dosis1    string  `gorm:"null" json:"buktidosis1"`
 	Dosis2    string  `gorm:"null" json:"buktidosis2"`
 	Booster   string  `gorm:"null" json:"buktibooster"`

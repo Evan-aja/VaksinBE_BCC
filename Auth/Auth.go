@@ -1,13 +1,19 @@
 package Auth
 
 import (
-	"fmt"
+	"bytes"
+	"context"
+	"encoding/json"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/joho/godotenv"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
 
 func Authorization() gin.HandlerFunc {
@@ -16,7 +22,7 @@ func Authorization() gin.HandlerFunc {
 		header = header[len("Bearer "):]
 		godotenv.Load(".env")
 		token, err := jwt.Parse(header, func(t *jwt.Token) (interface{}, error) {
-			return []byte(fmt.Sprintf("%s", os.Getenv("TOKEN_G"))), nil
+			return []byte(os.Getenv("TOKEN_G")), nil
 		})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -41,4 +47,56 @@ func Authorization() gin.HandlerFunc {
 			return
 		}
 	}
+}
+
+var GoogleAuth *oauth2.Config = &oauth2.Config{
+	ClientID:     "532005420615-cdqb43rk66g0r6h2n1kbjh0s2p5a2kuk.apps.googleusercontent.com",
+	ClientSecret: "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",
+	RedirectURL:  "http://localhost:8080/user/google/callback",
+	Scopes: []string{
+		"https://www.googleapis.com/auth/userinfo.email",
+		"https://www.googleapis.com/auth/userinfo.profile",
+	},
+	Endpoint: google.Endpoint,
+}
+
+func GInit(c *gin.Context) {
+	url := GoogleAuth.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	c.Redirect(302, url)
+}
+
+func GCallback(c *gin.Context) {
+	code := c.Query("code")
+	tok, err := GoogleAuth.Exchange(context.Background(), code)
+	if err != nil {
+		log.Fatal(err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		// return
+	}
+	client := GoogleAuth.Client(context.Background(), tok)
+	resp, err := client.Get("https://www.googleapis.com/oauth2/v3/userinfo")
+	if err != nil {
+		log.Fatal(err)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   err.Error(),
+		})
+		// return
+	}
+	defer resp.Body.Close()
+	body, _ := ioutil.ReadAll(resp.Body)
+	log.Println("body", string(body))
+
+	var prettyJSON bytes.Buffer
+	err = json.Indent(&prettyJSON, body, "", "\t")
+	if err != nil {
+		log.Println("JSON parse error: ", err)
+		// return
+	}
+
+	c.String(200, prettyJSON.String())
+	println(prettyJSON.String())
 }

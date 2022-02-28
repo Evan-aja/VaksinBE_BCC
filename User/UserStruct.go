@@ -5,13 +5,14 @@ type User struct {
 	Name      string `gorm:"notNull" json:"name"`
 	Email     string `gorm:"uniqueIndex;notNull" json:"email"`
 	Password  string `gorm:"notNull" json:"password"`
-	Handphone string `gorm:"uniqueIndex;notNull" json:"handphone"`
+	Handphone string `gorm:"uniqueIndex" json:"handphone"`
 }
 type UserPublic struct {
-	ID        uint   `gorm:"primarykey" json:"id"`
+	PubID     uint   `json:"pubid"`
+	User      User   `gorm:"ForeignKey:PubID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Name      string `gorm:"notNull" json:"name"`
 	Email     string `gorm:"uniqueIndex;notNull" json:"email"`
-	Handphone string `gorm:"uniqueIndex;notNull" json:"handphone"`
+	Handphone string `gorm:"uniqueIndex" json:"handphone"`
 }
 
 type UserRegister struct {

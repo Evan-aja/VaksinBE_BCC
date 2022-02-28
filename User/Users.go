@@ -5,7 +5,6 @@ import (
 	"VaksinBE_BCC/Vaccine"
 	"crypto/sha512"
 	"encoding/hex"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -21,8 +20,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 	r.GET("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
-		vacc := Vaccine.Vaccine{}
-		proof := Vaccine.VaccProof{}
+		vacc := Vaccine.VaccProof{}
 		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -31,15 +29,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		if err := db.Where("id=?", id).Take(&vacc); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
-		if err := db.Where("id_vaccine=?", id).Take(&proof); err.Error != nil {
+		if err := db.Where("id_vaccine=?", id).Preload("Vaccine").Take(&vacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -51,16 +41,11 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "success",
 			"data": gin.H{
-				"id":                  user.ID,
-				"name":                user.Name,
-				"email":               user.Email,
-				"handphone":           user.Handphone,
-				"dosis 1":             vacc.Dosis1,
-				"dosis 2":             vacc.Dosis2,
-				"booster":             vacc.Booster,
-				"bukti dosis 1":       proof.Dosis1,
-				"bukti dosis 2":       proof.Dosis2,
-				"bukti dosis booster": proof.Booster,
+				"id":        user.ID,
+				"name":      user.Name,
+				"email":     user.Email,
+				"handphone": user.Handphone,
+				"vaksinasi": vacc,
 			},
 		})
 	})
@@ -122,11 +107,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			Password:  hash(input.Password),
 			Handphone: input.Handphone,
 		}
-		registPublic := UserPublic{
-			Name:      input.Name,
-			Email:     input.Email,
-			Handphone: input.Handphone,
-		}
+		registPublic := UserPublic{}
 		registVacc := Vaccine.Vaccine{
 			Dosis1:  false,
 			Dosis2:  false,
@@ -139,6 +120,12 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 				"error":   err.Error.Error(),
 			})
 			return
+		}
+		registPublic = UserPublic{
+			PubID:     regist.ID,
+			Name:      input.Name,
+			Email:     input.Email,
+			Handphone: input.Handphone,
 		}
 		if err := db.Create(&registPublic); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -171,10 +158,15 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "Account created successfully",
 			"error":   nil,
-			"data": gin.H{
-				"handphone": regist.Handphone,
-				"email":     regist.Email,
-			},
+			"data":    registPublic,
+		})
+	})
+	r.GET("/google", Auth.GInit)
+	r.GET("/google/callback", Auth.GCallback, func(c *gin.Context) {
+		// c.BindJSON()
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"data":    "ID",
 		})
 	})
 	r.POST("/login", func(c *gin.Context) {
@@ -204,7 +196,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 				"exp": time.Now().Add(time.Hour * 7 * 24).Unix(),
 			})
 			godotenv.Load(".env")
-			strToken, err := token.SignedString([]byte(fmt.Sprintf("%s", os.Getenv("TOKEN_G"))))
+			strToken, err := token.SignedString([]byte(os.Getenv("TOKEN_G")))
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"success": false,
@@ -235,6 +227,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		id, _ := c.Get("id")
 		user := User{}
 		userpub := UserPublic{}
+		vacc := Vaccine.Vaccine{}
 		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -251,6 +244,14 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		if err := db.Where("id=?", id).Take(&vacc); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
 		if err := db.Delete(&user); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -260,6 +261,14 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		if err := db.Delete(&userpub); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err := db.Delete(&vacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -293,14 +302,6 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		if err := db.Where("id=?", id).Take(&userpub); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
 		user = User{
 			ID:        user.ID,
 			Name:      input.Name,
@@ -309,7 +310,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			Handphone: input.Handphone,
 		}
 		userpub = UserPublic{
-			ID:        userpub.ID,
+			PubID:     user.ID,
 			Name:      input.Name,
 			Email:     input.Email,
 			Handphone: input.Handphone,
@@ -323,7 +324,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		ers := db.Model(&userpub).Updates(userpub)
+		ers := db.Model(&userpub).Where("pub_id=?", user.ID).Updates(userpub)
 		if ers.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -340,7 +341,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		if ers := db.Where("id = ?", id).Take(&userpub); ers.Error != nil {
+		if ers := db.Where("pub_id = ?", id).Preload("User").Take(&userpub); ers.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Error when querying the database.",
@@ -348,25 +349,28 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		if err.RowsAffected < 1 {
+		if err.RowsAffected < 1 || ers.RowsAffected < 1 {
 			c.JSON(http.StatusNotFound, gin.H{
 				"success": false,
-				"message": "User not found.",
-			})
-			return
-		}
-		if ers.RowsAffected < 1 {
-			c.JSON(http.StatusNotFound, gin.H{
-				"success": false,
-				"message": "User not found.",
+				"message": "No data has been changed.",
 			})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
 			"message": "Update successful.",
-			"data":    userpub,
-			"input":   input,
+			"data": gin.H{
+				"id":        userpub.PubID,
+				"name":      userpub.Name,
+				"email":     userpub.Email,
+				"handphone": userpub.Handphone,
+			},
+			"input": gin.H{
+				"id":        input.ID,
+				"name":      input.Name,
+				"email":     input.Email,
+				"handphone": input.Handphone,
+			},
 		})
 	})
 }
