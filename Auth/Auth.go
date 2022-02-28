@@ -49,23 +49,34 @@ func Authorization() gin.HandlerFunc {
 	}
 }
 
-var GoogleAuth *oauth2.Config = &oauth2.Config{
-	ClientID:     "532005420615-cdqb43rk66g0r6h2n1kbjh0s2p5a2kuk.apps.googleusercontent.com",
-	ClientSecret: "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",
-	RedirectURL:  "http://localhost:8080/user/google/callback",
-	Scopes: []string{
-		"https://www.googleapis.com/auth/userinfo.email",
-		"https://www.googleapis.com/auth/userinfo.profile",
-	},
-	Endpoint: google.Endpoint,
-}
-
 func GInit(c *gin.Context) {
+	godotenv.Load(".env")
+	var GoogleAuth *oauth2.Config = &oauth2.Config{
+		ClientID:     os.Getenv("CLIENT_ID"),
+		ClientSecret: os.Getenv("CLIENT_SEC"),
+		RedirectURL:  "http://localhost:8080/user/google/callback",
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
 	url := GoogleAuth.AuthCodeURL("state", oauth2.AccessTypeOnline)
 	c.Redirect(302, url)
 }
 
 func GCallback(c *gin.Context) {
+	godotenv.Load(".env")
+	var GoogleAuth *oauth2.Config = &oauth2.Config{
+		ClientID:     os.Getenv("CLIENT_ID"),
+		ClientSecret: os.Getenv("CLIENT_SEC"),
+		RedirectURL:  "http://localhost:8080/user/google/callback",
+		Scopes: []string{
+			"https://www.googleapis.com/auth/userinfo.email",
+			"https://www.googleapis.com/auth/userinfo.profile",
+		},
+		Endpoint: google.Endpoint,
+	}
 	code := c.Query("code")
 	tok, err := GoogleAuth.Exchange(context.Background(), code)
 	if err != nil {
