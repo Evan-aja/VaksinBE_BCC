@@ -13,6 +13,7 @@ import (
 
 var db *gorm.DB
 
+// opening database to mysql in podman/docker xampp
 func Open() *gorm.DB {
 	var err error
 	godotenv.Load(".env")

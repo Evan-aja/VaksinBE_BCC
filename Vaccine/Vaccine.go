@@ -10,6 +10,8 @@ import (
 
 func Routes(db *gorm.DB, q *gin.Engine) {
 	r := q.Group("/vaccine")
+
+	// vaccine updates, needs all value to be filled accordingly. details in the code
 	r.PATCH("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		var input VaccineIn
@@ -31,7 +33,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		// if dosis1 is true and everything else is false, set everything to null or false
 		if input.Dosis1 && !input.Dosis2 && !input.Booster {
+			// if proof is null then bad request
 			if input.Bukti1 == "" {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"success": false,
@@ -44,6 +48,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			input.Booster = false
 			input.Bukti3 = ""
 		}
+		// if dosis2 is true and dosis1 is false, returns bad request
 		if input.Dosis2 && !input.Dosis1 {
 			input.Bukti1 = ""
 			input.Bukti2 = ""
@@ -54,7 +59,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		// if dosis2 is true and booster is false, will set everything except booster to input value
 		if input.Dosis2 && !input.Booster {
+			// if proof is null then bad request
 			if input.Bukti2 == "" {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"success": false,
@@ -66,6 +73,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			input.Booster = false
 			input.Bukti3 = ""
 		}
+		// if biister is true but everything else is false, send bad request
 		if input.Booster && !input.Dosis2 || input.Booster && !input.Dosis1 {
 			input.Bukti1 = ""
 			input.Bukti2 = ""
@@ -76,7 +84,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		// if booster is true, and everything else did not violate previous rules, set to true
 		if input.Booster {
+			// if proof is null then bad request
 			if input.Bukti3 == "" {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"success": false,

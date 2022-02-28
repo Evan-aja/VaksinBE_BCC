@@ -5,6 +5,7 @@ import (
 	"VaksinBE_BCC/Vaccine"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"os"
 	"time"
@@ -17,6 +18,7 @@ import (
 
 func Routes(db *gorm.DB, q *gin.Engine) {
 	r := q.Group("/user")
+	// show logged in user profile
 	r.GET("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
@@ -49,6 +51,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			},
 		})
 	})
+	// search for other user profile by name or email
 	r.GET("/search", func(c *gin.Context) {
 		name, nameExists := c.GetQuery("name")
 		email, emailExists := c.GetQuery("email")
@@ -91,6 +94,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			},
 		})
 	})
+	// normal registration without google. needs Name, Email, Handphone, and Password
+
 	r.POST("/register", func(c *gin.Context) {
 		var input UserRegister
 		if err := c.BindJSON(&input); err != nil {
@@ -116,7 +121,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		if err := db.Create(&regist); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": "Something went wrong",
+				"message": "Something went wrong with user creation",
 				"error":   err.Error.Error(),
 			})
 			return
@@ -130,7 +135,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		if err := db.Create(&registPublic); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": "Something went wrong",
+				"message": "Something went wrong with public user creation",
 				"error":   err.Error.Error(),
 			})
 			return
@@ -138,7 +143,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		if err := db.Create(&registVacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": "Something went wrong",
+				"message": "Something went  on vaccine setter",
 				"error":   err.Error.Error(),
 			})
 			return
@@ -149,7 +154,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		if err := db.Create(&ProofVacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
-				"message": "Something went wrong",
+				"message": "Something went wrong on proof vaccine setter",
 				"error":   err.Error.Error(),
 			})
 			return
@@ -161,14 +166,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"data":    registPublic,
 		})
 	})
-	r.GET("/google", Auth.GInit)
-	r.GET("/google/callback", Auth.GCallback, func(c *gin.Context) {
-		// c.BindJSON()
-		c.JSON(http.StatusOK, gin.H{
-			"success": true,
-			"data":    "ID",
-		})
-	})
+	// normal login without google. needs Email/Handphone, and Password
 	r.POST("/login", func(c *gin.Context) {
 		var input UserLogin
 		if err := c.BindJSON(&input); err != nil {
@@ -223,6 +221,105 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 	})
+
+	// google registration, needs a button on web page for redirect and subsequently, logged in
+	r.GET("/google", Auth.GInit)
+	r.GET("/google/callback", func(c *gin.Context) {
+		var a = Auth.GCallback(c)
+		var b = []byte(a)
+		var goog Goog
+		var user User
+		if err := json.Unmarshal(b, &goog); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Something went wrong",
+				"err":     err.Error(),
+			})
+			return
+		}
+		user = User{}
+		if err := db.Where("email=?", goog.Email).Take(&user); err.Error != nil {
+			user = User{
+				Name:     goog.Name,
+				Email:    goog.Email,
+				Password: hash(goog.Sub),
+			}
+			registPublic := UserPublic{}
+			registVacc := Vaccine.Vaccine{
+				Dosis1:  false,
+				Dosis2:  false,
+				Booster: false,
+			}
+			if err := db.Create(&user); err.Error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "Something went wrong with user creation",
+					"error":   err.Error.Error(),
+				})
+				return
+			}
+			registPublic = UserPublic{
+				PubID: user.ID,
+				Name:  goog.Name,
+				Email: goog.Email,
+			}
+			if err := db.Create(&registPublic); err.Error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "Something went wrong with public user creation",
+					"error":   err.Error.Error(),
+				})
+				return
+			}
+			if err := db.Create(&registVacc); err.Error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "Something went wrong with vaccine setter",
+					"error":   err.Error.Error(),
+				})
+				return
+			}
+			ProofVacc := Vaccine.VaccProof{
+				IDVaccine: registVacc.ID,
+			}
+			if err := db.Create(&ProofVacc); err.Error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "Something went wrong with proof vaccine setter",
+					"error":   err.Error.Error(),
+				})
+				return
+			}
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"message": "no account was found",
+				"status":  "creating new account",
+			})
+		}
+		token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+			"id":  user.ID,
+			"exp": time.Now().Add(time.Hour * 7 * 24).Unix(),
+		})
+		godotenv.Load(".env")
+		strToken, err := token.SignedString([]byte(os.Getenv("TOKEN_G")))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Welcome, here's your token. don't lose it ;)",
+			"data": gin.H{
+				"email":     user.Email,
+				"handphone": user.Handphone,
+				"token":     strToken,
+			},
+		})
+	})
+
+	// deletes user data, universal, only needs to be logged in. FE should gives prompt to ask wether the account deletion is intentional or not.
 	r.DELETE("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
@@ -281,6 +378,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"deleted": userpub,
 		})
 	})
+
+	// updates user data (universal). can be filled all willy nilly. users can change Name, Email, Handphone, and Password. FE should restrict Email, however, since if an invalid email is written by the user, it'll make their account inaccessible
 	r.PATCH("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		var input User

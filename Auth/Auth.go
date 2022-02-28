@@ -16,6 +16,7 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+// regular authentication
 func Authorization() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		header := c.Request.Header.Get("Authorization")
@@ -49,6 +50,7 @@ func Authorization() gin.HandlerFunc {
 	}
 }
 
+// google authentication
 func GInit(c *gin.Context) {
 	godotenv.Load(".env")
 	var GoogleAuth *oauth2.Config = &oauth2.Config{
@@ -65,7 +67,7 @@ func GInit(c *gin.Context) {
 	c.Redirect(302, url)
 }
 
-func GCallback(c *gin.Context) {
+func GCallback(c *gin.Context) string {
 	godotenv.Load(".env")
 	var GoogleAuth *oauth2.Config = &oauth2.Config{
 		ClientID:     os.Getenv("CLIENT_ID"),
@@ -102,12 +104,11 @@ func GCallback(c *gin.Context) {
 	log.Println("body", string(body))
 
 	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, body, "", "\t")
+	err = json.Indent(&prettyJSON, body, "", "")
 	if err != nil {
 		log.Println("JSON parse error: ", err)
 		// return
 	}
-
-	c.String(200, prettyJSON.String())
 	println(prettyJSON.String())
+	return prettyJSON.String()
 }

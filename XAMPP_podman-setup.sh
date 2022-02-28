@@ -1,3 +1,4 @@
+#this is for XAMPP on podman. if you use docker, you should replace podman with docker, and adjust privileges accordingly. i use podman because it can run on userspace. which is safer than letting it run on superuser space.
 sec=5
 name=xamppBCC
 mysqlpassword=123

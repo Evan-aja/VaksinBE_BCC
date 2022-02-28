@@ -11,6 +11,7 @@ import (
 
 var r *gin.Engine
 
+// main runner
 func main() {
 	fmt.Println("HI")
 	db := database.Open()
