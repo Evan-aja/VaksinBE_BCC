@@ -107,10 +107,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		regist := User{
-			Name:      input.Name,
-			Email:     input.Email,
-			Password:  hash(input.Password),
-			Handphone: input.Handphone,
+			Name:     input.Name,
+			Email:    input.Email,
+			Password: hash(input.Password),
 		}
 		registPublic := UserPublic{}
 		registVacc := Vaccine.Vaccine{
@@ -127,10 +126,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		registPublic = UserPublic{
-			PubID:     regist.ID,
-			Name:      input.Name,
-			Email:     input.Email,
-			Handphone: input.Handphone,
+			PubID: regist.ID,
+			Name:  input.Name,
+			Email: input.Email,
 		}
 		if err := db.Create(&registPublic); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -402,17 +400,21 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			return
 		}
 		user = User{
-			ID:        user.ID,
-			Name:      input.Name,
-			Email:     input.Email,
-			Password:  hash(input.Password),
-			Handphone: input.Handphone,
+			ID:           user.ID,
+			Name:         input.Name,
+			Email:        input.Email,
+			Password:     hash(input.Password),
+			Handphone:    input.Handphone,
+			TanggalLahir: input.TanggalLahir,
+			NIK:          input.NIK,
+			NIM:          input.NIM,
+			Gender:       input.Gender,
 		}
 		userpub = UserPublic{
-			PubID:     user.ID,
-			Name:      input.Name,
-			Email:     input.Email,
-			Handphone: input.Handphone,
+			PubID:  user.ID,
+			Name:   input.Name,
+			Email:  input.Email,
+			Gender: input.Gender,
 		}
 		err := db.Model(&user).Updates(user)
 		if err.Error != nil {
@@ -459,10 +461,9 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "Update successful.",
 			"data": gin.H{
-				"id":        userpub.PubID,
-				"name":      userpub.Name,
-				"email":     userpub.Email,
-				"handphone": userpub.Handphone,
+				"id":    userpub.PubID,
+				"name":  userpub.Name,
+				"email": userpub.Email,
 			},
 			"input": gin.H{
 				"id":        input.ID,

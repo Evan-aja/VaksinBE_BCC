@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
-	gorm.io/gorm v1.23.1
+	gorm.io/gorm v1.23.2
 )
 
 require (
@@ -31,6 +31,7 @@ require (
 )
 
 require (
+	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/jinzhu/inflection v1.0.0 // indirect
