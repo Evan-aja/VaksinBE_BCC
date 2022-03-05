@@ -1,6 +1,7 @@
 package database
 
 import (
+	"VaksinBE_BCC/Service"
 	"VaksinBE_BCC/User"
 	"VaksinBE_BCC/Vaccine"
 	"fmt"
@@ -26,7 +27,7 @@ func Open() *gorm.DB {
 	if err != nil {
 		println(err.Error())
 	}
-	if err = db.AutoMigrate(&User.User{}, &User.UserPublic{}, &Vaccine.Vaccine{}, &Vaccine.VaccProof{}); err != nil {
+	if err = db.AutoMigrate(&User.User{}, &User.UserPublic{}, &Vaccine.Vaccine{}, &Vaccine.VaccProof{}, &Service.Schedule{}, &Service.Swab{}); err != nil {
 		fmt.Println(err.Error())
 	}
 	return db

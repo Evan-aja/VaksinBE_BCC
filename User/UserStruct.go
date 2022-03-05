@@ -36,7 +36,6 @@ type Goog struct {
 	Email      string `json:"email"`
 	EmailVerif bool   `json:"email_verified"`
 	Locale     string `json:"locale"`
-	Hd         string `json:"hd"`
 }
 
 // regular register

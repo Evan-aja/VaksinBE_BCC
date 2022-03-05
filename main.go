@@ -3,6 +3,7 @@ package main
 import (
 	"VaksinBE_BCC/Dashboard"
 	"VaksinBE_BCC/Database"
+	"VaksinBE_BCC/Service"
 	"VaksinBE_BCC/User"
 	"VaksinBE_BCC/Vaccine"
 	"fmt"
@@ -25,6 +26,7 @@ func main() {
 	Dashboard.Routes(db, r)
 	User.Routes(db, r)
 	Vaccine.Routes(db, r)
+	Service.Routes(db, r)
 
 	fmt.Println("Router siap")
 	fmt.Println("Server berjalan")
