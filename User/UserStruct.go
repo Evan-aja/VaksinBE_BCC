@@ -8,7 +8,7 @@ import (
 type User struct {
 	ID           uint      `gorm:"primarykey" json:"id"`
 	Name         string    `gorm:"notNull" json:"name"`
-	Email        string    `gorm:"uniqueIndex;notNull" json:"email"`
+	Email        string    `gorm:"uniqueIndex;notNull;size:256" json:"email"`
 	Password     string    `gorm:"notNull" json:"password"`
 	Handphone    string    `json:"handphone"`
 	TanggalLahir time.Time `json:"tanggal_lahir"`
@@ -22,7 +22,7 @@ type UserPublic struct {
 	PubID  uint   `json:"pubid"`
 	User   User   `gorm:"ForeignKey:PubID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Name   string `gorm:"notNull" json:"name"`
-	Email  string `gorm:"uniqueIndex;notNull" json:"email"`
+	Email  string `gorm:"uniqueIndex;notNull;size:256" json:"email"`
 	Gender string `json:"gender"`
 }
 

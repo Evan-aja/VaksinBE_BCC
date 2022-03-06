@@ -4,7 +4,7 @@ import "time"
 
 type Swab struct {
 	ID       uint       `gorm:"primarykey" json:"id"`
-	Type     string     `gorm:"uniqueIndex" json:"type"`
+	Type     string     `gorm:"uniqueIndex;size:256" json:"type"`
 	Cost     uint       `json:"cost"`
 	AdCost   uint       `json:"admin_cost"`
 	Schedule []Schedule `gorm:"many2many:swab_schedule;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
