@@ -1,1 +1,1 @@
-build: go build .
+build: go build -o bin/application main.go

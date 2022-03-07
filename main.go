@@ -2,7 +2,6 @@ package main
 
 import (
 	"VaksinBE_BCC/Dashboard"
-	"VaksinBE_BCC/Database"
 	"VaksinBE_BCC/Service"
 	"VaksinBE_BCC/User"
 	"VaksinBE_BCC/Vaccine"
@@ -30,7 +29,7 @@ func main() {
 
 	fmt.Println("Router siap")
 	fmt.Println("Server berjalan")
-	if err := r.Run(); err != nil {
+	if err := r.Run(":5000"); err != nil {
 		fmt.Println("error")
 		fmt.Println(err.Error())
 		return
