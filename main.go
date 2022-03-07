@@ -2,6 +2,7 @@ package main
 
 import (
 	"VaksinBE_BCC/Dashboard"
+	database "VaksinBE_BCC/Database"
 	"VaksinBE_BCC/Service"
 	"VaksinBE_BCC/User"
 	"VaksinBE_BCC/Vaccine"
