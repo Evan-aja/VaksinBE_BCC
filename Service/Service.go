@@ -4,6 +4,7 @@ import (
 	"VaksinBE_BCC/Auth"
 	"VaksinBE_BCC/User"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -44,9 +45,70 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			},
 		})
 		c.JSON(http.StatusOK, gin.H{
+			"success":            true,
+			"message":            "System query sucessfull",
+			"Available schedule": swab,
+		})
+	})
+	r.POST("/daftar/swab", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		user := User.User{}
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying user",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		transac := TransactionSwab{}
+		if err := c.BindJSON(&transac); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Something went wrong while binding",
+				"error":   err.Error(),
+			})
+			return
+		}
+		if user.Email != transac.Email && user.Gender != transac.Gender && user.Handphone != transac.Handphone && user.NIK != transac.NIK && user.NIM != transac.NIM && user.Name != transac.Name {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "user data and transaction data do not line up. please update your data on profile page.",
+			})
+			return
+		}
+		if transac.NIM != "" {
+			transac.AdCost = 0
+		}
+		if transac.Date.Unix() > time.Now().Add(time.Hour*24*7).Unix() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Booking time must not exceed 7 days",
+			})
+			return
+		}
+
+		transac.Paid = false
+		transac.UserID = user.ID
+		if err := db.Create(&transac); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Transaction cannot be processed. please contact support for more help",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err := db.Where("id=?", transac.ID).Preload("Schedule").Take(&transac); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "server failed to query your appointment",
+				"error":   err.Error.Error(),
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
 			"success": true,
-			"message": "System query sucessfull",
-			"data":    swab,
+			"message": "Transaction has been completed successfully. please fulfill the payment immediately after",
+			"data":    transac,
 		})
 	})
 	r.POST("/add/schedule", Auth.Authorization(), func(c *gin.Context) {

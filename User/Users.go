@@ -43,11 +43,15 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "success",
 			"data": gin.H{
-				"id":        user.ID,
-				"name":      user.Name,
-				"email":     user.Email,
-				"handphone": user.Handphone,
-				"vaksinasi": vacc,
+				"id":            user.ID,
+				"name":          user.Name,
+				"email":         user.Email,
+				"handphone":     user.Handphone,
+				"nim":           user.NIM,
+				"nik":           user.NIK,
+				"gender":        user.Gender,
+				"tanggal_lahir": user.TanggalLahir,
+				"vaksinasi":     vacc,
 			},
 		})
 	})
@@ -180,11 +184,17 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			if err = db.Where("handphone=?", input.Handphone).Take(&login); err.Error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"success": false,
-					"message": "Email does not exist",
+					"message": "Phone does not exist",
 					"error":   err.Error.Error(),
 				})
 				return
 			}
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Email does not exist",
+				"error":   err.Error.Error(),
+			})
+			return
 		}
 		if login.Password == hash(input.Password) {
 			token := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{

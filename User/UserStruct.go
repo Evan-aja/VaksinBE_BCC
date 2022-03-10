@@ -41,13 +41,13 @@ type Goog struct {
 // regular register
 type UserRegister struct {
 	Name     string `gorm:"notNull" json:"name"`
-	Email    string `gorm:"uniqueIndex;notNull" json:"email"`
+	Email    string `gorm:"uniqueIndex;notNull;size:256" json:"email"`
 	Password string `gorm:"notNull" json:"password"`
 }
 
 // regular login
 type UserLogin struct {
-	Handphone string `gorm:"uniqueIndex;notNull" json:"handphone"`
-	Email     string `gorm:"uniqueIndex;notNull" json:"email"`
+	Handphone string `gorm:"uniqueIndex;notNull;size:256" json:"handphone"`
+	Email     string `gorm:"uniqueIndex;notNull;size:256" json:"email"`
 	Password  string `gorm:"notNull" json:"password"`
 }
