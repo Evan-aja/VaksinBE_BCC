@@ -121,6 +121,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			Dosis2:  false,
 			Booster: false,
 		}
+		regist.TanggalLahir, _ = time.Parse("2006-01-02T15:04:05Z", "0001-01-01T00:00:00Z")
 		if err := db.Create(&regist); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
@@ -257,6 +258,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 				Dosis2:  false,
 				Booster: false,
 			}
+			user.TanggalLahir, _ = time.Parse("2006-01-02 15:04", "0001-01-01T00:00:00Z")
 			if err := db.Create(&user); err.Error != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"success": false,
@@ -331,17 +333,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 	r.DELETE("/", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User{}
-		userpub := UserPublic{}
 		vacc := Vaccine.Vaccine{}
 		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
-		if err := db.Where("id=?", id).Take(&userpub); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -357,23 +350,15 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
+		if err := db.Where("ID=?", vacc.ID).Delete(&vacc); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
 		if err := db.Delete(&user); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
-		if err := db.Delete(&userpub); err.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"success": false,
-				"message": "Something went wrong",
-				"error":   err.Error.Error(),
-			})
-			return
-		}
-		if err := db.Delete(&vacc); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "Something went wrong",
@@ -383,7 +368,11 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"success": true,
-			"deleted": userpub,
+			"deleted": gin.H{
+				"id":    user.ID,
+				"name":  user.Name,
+				"email": user.Email,
+			},
 		})
 	})
 

@@ -10,7 +10,7 @@ echo ""
 echo ""
 echo "Adding PATH to .bashrc"; podman exec -it $name perl -0644 -i -pe "s/# alias mv\=\'mv \-i\'/# alias mv\=\'mv \-i\'\nexport PATH\=\/opt\/lampp\/bin\:\\\$PATH/igs" /root/.bashrc
 echo ""
-echo "creating default database for bcc_backend"; podman exec -it $name /opt/lampp/bin/mysql -u root -e 'CREATE DATABASE bcc_backend;'
+echo "creating default database for bcc_backend"; podman exec -it $name /opt/lampp/bin/mysql -u root -e 'CREATE DATABASE intern_bcc_3;'
 echo "Adding access to MySQL"; podman exec -it $name /opt/lampp/bin/mysql -u root -D mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '$mysqlpassword' WITH GRANT OPTION;"
 echo ""
 echo "Moving document root into /www"; podman exec -it $name perl -0644 -i -pe 's/DocumentRoot \"\/opt\/lampp\/htdocs\"/#DocumentRoot \"\/opt\/lampp\/htdocs\"\nDocumentRoot \"\/www\"/;s/\<Directory \"\/opt\/lampp\/htdocs\"\>/#\<Directory \"\/opt\/lampp\/htdocs\"\>\n\<Directory \"\/www\">/igs' /opt/lampp/etc/httpd.conf

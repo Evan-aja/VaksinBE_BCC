@@ -111,6 +111,105 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"data":    transac,
 		})
 	})
+	r.GET("/daftar/poly", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		user := User.User{}
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		var poly []Poly
+		if err := db.Preload("Schedule").Find(&poly); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying for services",
+				"error":   err.Error.Error(),
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "user data query successful",
+			"data": gin.H{
+				"name":          user.Name,
+				"email":         user.Email,
+				"handphone":     user.Handphone,
+				"tanggal_lahir": user.TanggalLahir,
+				"nik":           user.NIK,
+				"nim":           user.NIM,
+				"gender":        user.Gender,
+			},
+		})
+		c.JSON(http.StatusOK, gin.H{
+			"success":            true,
+			"message":            "System query sucessfull",
+			"Available schedule": poly,
+		})
+	})
+	r.POST("/daftar/poly", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		user := User.User{}
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying user",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		transac := TransactionPoly{}
+		if err := c.BindJSON(&transac); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Something went wrong while binding",
+				"error":   err.Error(),
+			})
+			return
+		}
+		if user.Email != transac.Email && user.Gender != transac.Gender && user.Handphone != transac.Handphone && user.NIK != transac.NIK && user.NIM != transac.NIM && user.Name != transac.Name {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "user data and transaction data does not line up. please update your data on profile page.",
+			})
+			return
+		}
+		if transac.NIM != "" {
+			transac.AdCost = 0
+		}
+		if transac.Date.Unix() > time.Now().Add(time.Hour*24*7).Unix() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Booking time must not exceed 7 days",
+			})
+			return
+		}
+
+		transac.Paid = false
+		transac.UserID = user.ID
+		if err := db.Create(&transac); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Transaction cannot be processed. please contact support for more help",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if err := db.Where("id=?", transac.ID).Preload("Schedule").Take(&transac); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "server failed to query your appointment",
+				"error":   err.Error.Error(),
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Transaction has been completed successfully. please fulfill the payment immediately after",
+			"data":    transac,
+		})
+	})
 	r.POST("/add/schedule", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -234,6 +333,102 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		}
 		result := Swab{}
 		if err := db.Where("id=?", sw.ID).Preload("Schedule").Take(&result); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "error on query",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "Service added",
+			"data":    result,
+		})
+	})
+	r.GET("add/poly", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		user := User.User{}
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if user.Email != "admin1@gmail.com" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "Sorry, this page is for administrator only",
+			})
+			return
+		}
+		var sch []Schedule
+		if err := db.Find(&sch); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying for schedules",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success":   true,
+			"message":   "ready to receive Poly Service addition. pick schedules by id",
+			"schedules": sch,
+		})
+	})
+	r.POST("/add/poly", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		user := User.User{}
+		if err := db.Where("id=?", id).Take(&user); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		if user.Email != "admin1@gmail.com" {
+			c.JSON(http.StatusForbidden, gin.H{
+				"success": false,
+				"message": "Sorry, this page is for administrator only",
+			})
+			return
+		}
+		pa := AddPoly{}
+		if err := c.BindJSON(&pa); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Please check the data you've submitted for swab",
+			})
+			return
+		}
+		pw := Poly{
+			Type:        pa.Type,
+			Cost:        pa.Cost,
+			AdCost:      pa.AdCost,
+			Description: pa.Description,
+		}
+		if err := db.Create(&pw); err.Error != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Please check your input data",
+				"error":   err.Error.Error(),
+			})
+		}
+		for _, val := range pa.ScheduleID {
+			if err := db.Exec("INSERT INTO poly_schedule (poly_id,schedule_id) VALUES(?,?);", pw.ID, val); err.Error != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": "something went wrong in the database",
+					"error":   err.Error.Error(),
+				})
+			}
+		}
+		result := Poly{}
+		if err := db.Where("id=?", pw.ID).Preload("Schedule").Take(&result); err.Error != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"success": false,
 				"message": "error on query",

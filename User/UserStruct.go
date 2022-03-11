@@ -11,7 +11,7 @@ type User struct {
 	Email        string    `gorm:"uniqueIndex;notNull;size:256" json:"email"`
 	Password     string    `gorm:"notNull" json:"password"`
 	Handphone    string    `json:"handphone"`
-	TanggalLahir time.Time `json:"tanggal_lahir"`
+	TanggalLahir time.Time `gorm:"null" json:"tanggal_lahir"`
 	NIK          string    `json:"nik"`
 	NIM          string    `json:"nim"`
 	Gender       string    `json:"gender"`

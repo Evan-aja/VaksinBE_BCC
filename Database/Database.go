@@ -27,7 +27,7 @@ func Open() *gorm.DB {
 	if err != nil {
 		println(err.Error())
 	}
-	if err = db.AutoMigrate(&User.User{}, &User.UserPublic{}, &Vaccine.Vaccine{}, &Vaccine.VaccProof{}, &Service.Schedule{}, &Service.Swab{}, &Service.TransactionSwab{}); err != nil {
+	if err = db.AutoMigrate(&User.User{}, &User.UserPublic{}, &Vaccine.Vaccine{}, &Vaccine.VaccProof{}, &Service.Schedule{}, &Service.Swab{}, &Service.TransactionSwab{}, &Service.Poly{}, &Service.TransactionPoly{}); err != nil {
 		fmt.Println(err.Error())
 	}
 	return db
