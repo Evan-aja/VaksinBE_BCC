@@ -70,7 +70,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		if user.Email != transac.Email && user.Gender != transac.Gender && user.Handphone != transac.Handphone && user.NIK != transac.NIK && user.NIM != transac.NIM && user.Name != transac.Name {
+		if user.Email != transac.Email || user.Gender != transac.Gender || user.Handphone != transac.Handphone || user.NIK != transac.NIK || user.NIM != transac.NIM || user.Name != transac.Name {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "user data and transaction data do not line up. please update your data on profile page.",
@@ -84,6 +84,12 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"message": "Booking time must not exceed 7 days",
+			})
+			return
+		} else if transac.Date.Unix() < time.Now().Unix() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Booking time must not be on past date",
 			})
 			return
 		}
@@ -109,6 +115,76 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "Transaction has been completed successfully. please fulfill the payment immediately after",
 			"data":    transac,
+		})
+	})
+	r.GET("/riwayat/swab", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		var transac []TransactionSwab
+		if err := db.Preload("Schedule").Find(&transac).Where("user_id=?", id); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying for history",
+				"error":   err.Error.Error(),
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "System query sucessfull",
+			"history": transac,
+		})
+	})
+	r.PATCH("/update/swab", Auth.Authorization(), func(c *gin.Context) {
+		// id, _ := c.Get("id")
+		transac := TransactionSwab{}
+		transup := TransSwabUp{}
+		if err := c.BindJSON(&transup); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Body is invalid.",
+				"error":   err.Error(),
+			})
+			return
+		}
+		if err := db.Preload("Schedule").Find(&transac).Where("id=?", transup.ID); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying for history",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		transac = TransactionSwab{
+			ID:           transac.ID,
+			UserID:       transac.UserID,
+			User:         transac.User,
+			Name:         transac.Name,
+			Email:        transac.Email,
+			Handphone:    transac.Handphone,
+			TanggalLahir: transac.TanggalLahir,
+			NIK:          transac.NIK,
+			NIM:          transac.NIM,
+			Gender:       transac.Gender,
+			Type:         transac.Type,
+			Date:         transac.Date,
+			Cost:         transac.Cost,
+			AdCost:       transac.AdCost,
+			IDSchedule:   transac.IDSchedule,
+			Schedule:     transac.Schedule,
+			Paid:         transup.Paid,
+			Receipt:      transup.Receipt,
+		}
+		if err := db.Model(&transac).Where("id=?", transac.ID).Updates(transac); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when updating the database or id is incorrect",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "System query sucessfull",
+			"history": transac,
 		})
 	})
 	r.GET("/daftar/poly", Auth.Authorization(), func(c *gin.Context) {
@@ -169,7 +245,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			})
 			return
 		}
-		if user.Email != transac.Email && user.Gender != transac.Gender && user.Handphone != transac.Handphone && user.NIK != transac.NIK && user.NIM != transac.NIM && user.Name != transac.Name {
+		if user.Email != transac.Email || user.Gender != transac.Gender || user.Handphone != transac.Handphone && user.NIK != transac.NIK || user.NIM != transac.NIM || user.Name != transac.Name {
 			c.JSON(http.StatusForbidden, gin.H{
 				"success": false,
 				"message": "user data and transaction data does not line up. please update your data on profile page.",
@@ -183,6 +259,12 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"message": "Booking time must not exceed 7 days",
+			})
+			return
+		} else if transac.Date.Unix() < time.Now().Unix() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Booking time must not be on past date",
 			})
 			return
 		}
@@ -208,6 +290,76 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"success": true,
 			"message": "Transaction has been completed successfully. please fulfill the payment immediately after",
 			"data":    transac,
+		})
+	})
+	r.GET("/riwayat/poly", Auth.Authorization(), func(c *gin.Context) {
+		id, _ := c.Get("id")
+		var transac []TransactionPoly
+		if err := db.Preload("Schedule").Find(&transac).Where("user_id=?", id); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying for history",
+				"error":   err.Error.Error(),
+			})
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "System query sucessfull",
+			"history": transac,
+		})
+	})
+	r.PATCH("/update/poly", Auth.Authorization(), func(c *gin.Context) {
+		transac := TransactionPoly{}
+		transup := TransPolyUp{}
+		if err := c.BindJSON(&transup); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"success": false,
+				"message": "Body is invalid.",
+				"error":   err.Error(),
+			})
+			return
+		}
+		if err := db.Preload("Schedule").Find(&transac).Where("id=?", transup.ID); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Something went wrong while querying for history",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		transac = TransactionPoly{
+			ID:           transac.ID,
+			UserID:       transac.UserID,
+			User:         transac.User,
+			Name:         transac.Name,
+			Email:        transac.Email,
+			Handphone:    transac.Handphone,
+			TanggalLahir: transac.TanggalLahir,
+			NIK:          transac.NIK,
+			NIM:          transac.NIM,
+			Gender:       transac.Gender,
+			Type:         transac.Type,
+			Date:         transac.Date,
+			Cost:         transac.Cost,
+			AdCost:       transac.AdCost,
+			IDSchedule:   transac.IDSchedule,
+			Schedule:     transac.Schedule,
+			Description:  transac.Description,
+			Paid:         transup.Paid,
+			Receipt:      transup.Receipt,
+		}
+		if err := db.Model(&transac).Where("id=?", transac.ID).Updates(transac); err.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"message": "Error when updating the database or id is incorrect",
+				"error":   err.Error.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "System query sucessfull",
+			"history": transac,
 		})
 	})
 	r.POST("/add/schedule", Auth.Authorization(), func(c *gin.Context) {

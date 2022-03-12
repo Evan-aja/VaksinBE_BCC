@@ -62,6 +62,13 @@ type TransactionSwab struct {
 	IDSchedule   uint      `json:"id_schedule"`
 	Schedule     Schedule  `gorm:"foreignKey:IDSchedule;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Paid         bool      `json:"status_pay"`
+	Receipt      string    `json:"receipt"`
+}
+
+type TransSwabUp struct {
+	ID      uint   `gorm:"primarykey" json:"id"`
+	Paid    bool   `json:"status_pay"`
+	Receipt string `json:"receipt"`
 }
 
 type TransactionPoly struct {
@@ -83,4 +90,11 @@ type TransactionPoly struct {
 	IDSchedule   uint      `json:"id_schedule"`
 	Schedule     Schedule  `gorm:"foreignKey:IDSchedule;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Paid         bool      `json:"status_pay"`
+	Receipt      string    `json:"receipt"`
+}
+
+type TransPolyUp struct {
+	ID      uint   `json:"id"`
+	Paid    bool   `json:"status_pay"`
+	Receipt string `json:"receipt"`
 }
