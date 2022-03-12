@@ -55,7 +55,7 @@ type TransactionSwab struct {
 	NIK          string    `json:"nik"`
 	NIM          string    `json:"nim"`
 	Gender       string    `json:"gender"`
-	Type         string    `gorm:"uniqueIndex;size:256" json:"type"`
+	Type         string    `gorm:"size:256" json:"type"`
 	Date         time.Time `gorm:"notNull" json:"date"`
 	Cost         uint      `json:"cost"`
 	AdCost       uint      `json:"admin_cost"`
@@ -75,7 +75,7 @@ type TransactionPoly struct {
 	NIK          string    `json:"nik"`
 	NIM          string    `json:"nim"`
 	Gender       string    `json:"gender"`
-	Type         string    `gorm:"uniqueIndex;size:256" json:"type"`
+	Type         string    `gorm:"size:256" json:"type"`
 	Description  string    `gorm:"notnull" json:"description"`
 	Date         time.Time `gorm:"notNull" json:"date"`
 	Cost         uint      `json:"cost"`
