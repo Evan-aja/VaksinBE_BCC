@@ -3,6 +3,7 @@ sec=5
 name=xamppBCC
 mysqlpassword=123
 
+echo "Do not cancel the script until it finishes."
 echo "Creating container with the name $name"; podman run --name $name -p 41061:22 -p 41062:80 -p 41063:3306 -p 41064:5900 -d -v /www:/www tomsik68/xampp
 echo ""
 while [ $sec -ge 0 ]; do echo -ne "Please wait for $sec seconds\033[0K\r"; let "sec=sec-1"; sleep 1; done
