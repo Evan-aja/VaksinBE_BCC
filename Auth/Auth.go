@@ -56,7 +56,7 @@ func GInit(c *gin.Context) {
 	var GoogleAuth *oauth2.Config = &oauth2.Config{
 		ClientID:     os.Getenv("CLIENT_ID"),
 		ClientSecret: os.Getenv("CLIENT_SEC"),
-		RedirectURL:  "http://localhost:8080/user/google/callback",
+		RedirectURL:  "http://intern-3.ap-southeast-1.elasticbeanstalk.com/user/google/callback",
 		Scopes: []string{
 			"https://www.googleapis.com/auth/userinfo.email",
 			"https://www.googleapis.com/auth/userinfo.profile",

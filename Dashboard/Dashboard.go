@@ -53,13 +53,13 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		persen3 := fmt.Sprintf("%.2f", float64(booster*100/id))
 		c.JSON(http.StatusOK, gin.H{
 			"success":            true,
-			"jumlah pengguna":    id,
-			"jumlah dosis1":      dosis1,
-			"persentase dosis1":  persen1,
-			"jumlah dosis2":      dosis2,
-			"persentase dosis2":  persen2,
-			"jumlah booster":     booster,
-			"persentase booster": persen3,
+			"jumlah_pengguna":    id,
+			"jumlah_dosis1":      dosis1,
+			"persentase_dosis1":  persen1,
+			"jumlah_dosis2":      dosis2,
+			"persentase_dosis2":  persen2,
+			"jumlah_booster":     booster,
+			"persentase_booster": persen3,
 		})
 	})
 }

@@ -12,6 +12,7 @@ import (
 
 func Routes(db *gorm.DB, q *gin.Engine) {
 	r := q.Group("/service")
+	// Untuk mendapatkan data pengguna dan daftar jadwal swab yang tersedia
 	r.GET("/daftar/swab", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -47,9 +48,10 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{
 			"success":            true,
 			"message":            "System query sucessfull",
-			"Available schedule": swab,
+			"available_schedule": swab,
 		})
 	})
+	// Untuk mendaftarkan pengguna menggunakan data pengguna dan daftar jadwal swab yang dipilih
 	r.POST("/daftar/swab", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -117,6 +119,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"data":    transac,
 		})
 	})
+
+	// Untuk mendapatkan riwayat pengguna dalam penggunaan layanan untuk swab test
 	r.GET("/riwayat/swab", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		var transac []TransactionSwab
@@ -133,6 +137,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"history": transac,
 		})
 	})
+
+	// Untuk mengubah data swab test yang telah dipesan pengguna (untuk bukti pembayaran)
 	r.PATCH("/update/swab", Auth.Authorization(), func(c *gin.Context) {
 		// id, _ := c.Get("id")
 		transac := TransactionSwab{}
@@ -187,6 +193,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"history": transac,
 		})
 	})
+
+	// Untuk mendapatkan data pengguna dan daftar jadwal poliklinik yang tersedia
 	r.GET("/daftar/poly", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -222,9 +230,10 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 		c.JSON(http.StatusOK, gin.H{
 			"success":            true,
 			"message":            "System query sucessfull",
-			"Available schedule": poly,
+			"available_schedule": poly,
 		})
 	})
+	// Untuk mendaftarkan pengguna menggunakan data pengguna dan daftar jadwal poliklinik yang dipilih
 	r.POST("/daftar/poly", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -292,6 +301,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"data":    transac,
 		})
 	})
+
+	// Untuk mendapatkan riwayat pengguna dalam penggunaan layanan untuk poliklinik
 	r.GET("/riwayat/poly", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		var transac []TransactionPoly
@@ -308,6 +319,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"history": transac,
 		})
 	})
+
+	// Untuk mengubah data layanan poliklinik yang telah dipesan pengguna (untuk bukti pembayaran)
 	r.PATCH("/update/poly", Auth.Authorization(), func(c *gin.Context) {
 		transac := TransactionPoly{}
 		transup := TransPolyUp{}
@@ -362,6 +375,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"history": transac,
 		})
 	})
+
+	// menambahkan jadwal yang tersedia. dalam string jam (08:00, 09:00 dsb)
 	r.POST("/add/schedule", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -403,6 +418,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"data":    sch,
 		})
 	})
+
+	// mendapatkan jadwal yang tersedia untuk penambahan layanan swab test
 	r.GET("add/swab", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -436,6 +453,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"schedules": sch,
 		})
 	})
+	// menambahkan layanan swab test berdasarkan data yang diberikan dan jadwal yang tersedia
 	r.POST("/add/swab", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -498,6 +516,8 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"data":    result,
 		})
 	})
+
+	// mendapatkan jadwal yang tersedia untuk penambahan layanan poliklinik
 	r.GET("add/poly", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
@@ -531,6 +551,7 @@ func Routes(db *gorm.DB, q *gin.Engine) {
 			"schedules": sch,
 		})
 	})
+	// menambahkan layanan poliklinik berdasarkan data yang diberikan dan jadwal yang tersedia
 	r.POST("/add/poly", Auth.Authorization(), func(c *gin.Context) {
 		id, _ := c.Get("id")
 		user := User.User{}
